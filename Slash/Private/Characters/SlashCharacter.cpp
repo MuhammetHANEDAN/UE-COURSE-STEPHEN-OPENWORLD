@@ -5,12 +5,14 @@
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedInputComponent.h"
 #include "Camera/CameraComponent.h"
-#include "Characters/SlashAnimInstance.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Items/Weapons/Weapon.h"
 #include "Characters/EnumTypes.h" 
 #include "Components/SphereComponent.h"
+#include "Components/AttributeComponent.h"
+#include "HUD/SlashHUD.h"
+#include "HUD/SlashOverlay.h"
 
 ASlashCharacter::ASlashCharacter()
 {
@@ -23,7 +25,8 @@ ASlashCharacter::ASlashCharacter()
 	SpringArmComponent->SetupAttachment(GetRootComponent());
 	CameraComponent=CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	CameraComponent->SetupAttachment(SpringArmComponent);
-
+	AttributesComponent=CreateDefaultSubobject<UAttributeComponent>(TEXT("Attributes"));
+	
 
 	
 }
@@ -33,7 +36,12 @@ void ASlashCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	GetMesh()->HideBoneByName(TEXT("weapon"),PBO_None);
-	if(APlayerController* PlayerController= Cast<APlayerController>(GetController()))
+	PlayerController= Cast<APlayerController>(GetController());
+	SlashHUD=Cast<ASlashHUD>(PlayerController->GetHUD());
+
+	GetWorldTimerManager().SetTimer(Delay,this,&ASlashCharacter::InitializeSlashOverlayWidget,0.1f,false);
+	
+	if(PlayerController)
 	{
 		if(UEnhancedInputLocalPlayerSubsystem* Subsystem=ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
@@ -46,7 +54,11 @@ void ASlashCharacter::BeginPlay()
 	SpringArmComponent->bUsePawnControlRotation=true;
 	GetCharacterMovement()->bOrientRotationToMovement=true;
 	GetCharacterMovement()->RotationRate.Yaw=300;
+	
+
+	
 }
+
 
 // Called every frame
 void ASlashCharacter::Tick(float DeltaTime)
@@ -68,6 +80,14 @@ void ASlashCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		EnhancedInputComponent->BindAction(AttackActions,ETriggerEvent::Started,this,&ASlashCharacter::NormalAttack);
 		EnhancedInputComponent->BindAction(ArmDisarmAction,ETriggerEvent::Started,this,&ASlashCharacter::ArmDisarm);
 	}
+}
+
+void ASlashCharacter::GetDamage(const FName& SectionName, const FHitResult HitResult, const float Damage)
+{
+	if(AttributesComponent==nullptr && SlashOverlay==nullptr) return;
+	AttributesComponent->Health=FMath::Clamp(AttributesComponent->Health-Damage,0,AttributesComponent->MaxHealth);
+	SlashOverlay->SetHealthorStaminaPercent(AttributesComponent->GetHpPercent(),true);
+	
 }
 
 
@@ -194,5 +214,16 @@ void ASlashCharacter::ArmDisarm()
 	
 }
 
+void ASlashCharacter::InitializeSlashOverlayWidget()
+{
+	SlashOverlay=SlashHUD->SlashOverlay;
 
+	if(SlashOverlay)
+	{
+		SlashOverlay->SetHealthorStaminaPercent(1,true);
+		SlashOverlay->SetHealthorStaminaPercent(1,false);
+		SlashOverlay->SetGoldorSouldText(0,true);
+		SlashOverlay->SetGoldorSouldText(0,false);
+	}
+}
 

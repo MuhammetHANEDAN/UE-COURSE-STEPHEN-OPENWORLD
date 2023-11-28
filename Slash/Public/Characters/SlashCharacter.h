@@ -3,12 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "BaseCharacter.h"
 #include "InputActionValue.h"
-#include "GameFramework/Character.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Characters/EnumTypes.h"
+#include "Pawns/BasePawn.h"
 #include "SlashCharacter.generated.h"
 
+class USlashOverlay;
+class ASlashHUD;
 class AWeapon;
 class AItem;
 class UCameraComponent;
@@ -17,7 +20,7 @@ class UInputMappingContext;
 struct FInputActionValue;
 
 UCLASS()
-class SLASH_API ASlashCharacter : public ACharacter
+class SLASH_API ASlashCharacter : public ABaseCharacter 
 {
 	GENERATED_BODY()
 
@@ -28,6 +31,9 @@ public:
 	ASlashCharacter();
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	UFUNCTION(BlueprintCallable)
+	virtual void GetDamage(const FName& SectionName = FName(" "), const FHitResult HitResult= FHitResult(), const float Damage=0);
 
 protected:
 	// VARIABLES--------------------------
@@ -52,6 +58,26 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly,BlueprintReadOnly,Category="Inputs")
 	UInputAction* ArmDisarmAction;
+
+	//HUD
+
+	UPROPERTY()
+	ASlashHUD* SlashHUD;
+
+	UPROPERTY()
+	USlashOverlay* SlashOverlay;
+
+	//TIMERS
+
+	FTimerHandle Delay;
+
+	UFUNCTION()
+	void InitializeSlashOverlayWidget();
+
+	//Player Controller
+
+	UPROPERTY()
+	APlayerController* PlayerController;
 
 	// ENUMS
 	UPROPERTY(VisibleAnywhere,BlueprintReadWrite,Category=Enums)
@@ -101,6 +127,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere)
 	UCameraComponent* CameraComponent;
+
+	UPROPERTY(VisibleAnywhere)
+	UAttributeComponent* AttributesComponent;
 
 	//Variables
 	/**

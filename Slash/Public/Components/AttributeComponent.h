@@ -33,5 +33,7 @@ public:
 	//FUNCTIONS
 
 	bool IsAlive() const;
+	float GetHpPercent() const ;
+	float GetStaminaPercent();
 		
 };
